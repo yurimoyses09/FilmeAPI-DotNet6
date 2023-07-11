@@ -34,7 +34,7 @@ public class FilmeController : ControllerBase
 	[HttpGet]
 	public IActionResult RecuperaFilmes([FromQuery]int skip = 0, [FromQuery]int take = 50)
 	{
-		var filmes = _context.Filmes.Skip(skip).Take(take);
+		var filmes = _mapper.Map<List<ReadFilmeDto>>(_context.Filmes.Skip(skip).Take(take));
 
 		return Ok(new { data = filmes.ToList() });
 	}
@@ -46,7 +46,9 @@ public class FilmeController : ControllerBase
 		if (filme == null)
 			return NotFound();
 
-        return Ok(new { data = filme });
+        var filmedto = _mapper.Map<ReadFilmeDto>(filme);
+
+        return Ok(new { data = filmedto });
     }
 
 	[HttpPut("{id}")]
@@ -85,6 +87,26 @@ public class FilmeController : ControllerBase
 			if (!TryValidateModel(filmeParcial)) return ValidationProblem(ModelState);
 
             _mapper.Map(filmeParcial, filme);
+            _context.SaveChanges();
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { data = ex.Message });
+        }
+    }
+
+	[HttpDelete("{id}")]
+	public IActionResult DeletaFilme(int id)
+	{
+        try
+        {
+            var filme = _context.Filmes.FirstOrDefault(x => x.Id == id);
+
+            if (filme == null) return NotFound();
+
+            _context.Remove(filme);
             _context.SaveChanges();
 
             return NoContent();
